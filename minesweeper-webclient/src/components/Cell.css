@@ -1,0 +1,17 @@
+.cell {
+    min-width: 0;
+    min-height: 0;
+
+    border: none;
+    border-radius: 0;
+    background-color: black;
+
+}
+
+.cell:hover {
+    border: 1px solid red;
+}
+
+.cell:active {
+    opacity: 0.5;
+}

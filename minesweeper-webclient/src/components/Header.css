@@ -1,0 +1,33 @@
+.headerWrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    height: 40px;
+    line-height: 40px;
+    padding: 5px 0;
+    font-size: 45px;
+    background: repeat url("../assets/header_back.webp");
+    box-shadow: 0 15px 5px black;;
+}
+
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    min-width: 400px;
+}
+
+.pageName {
+    display: flex;
+    justify-content: center;
+    color: rgb(168, 8, 8);
+    width: 320px;
+    background-color: rgb(27, 27, 27);
+    border-radius: 4px;
+    flex-direction: row;
+}
+
+.pageName > img {
+    margin-right: 5px;
+}

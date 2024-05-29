@@ -1,13 +1,10 @@
 import './Main.css';
-import '../components/Field';
-import Field from '../components/Field';
-
-const FIELD_SIZE = 20;
+import Game from '../components/Game';
 
 export default function Main() {
   return (
-    <div className="Main">
-      <Field size={FIELD_SIZE} />
+    <div className="main">
+      <Game />
     </div>
   );
 }
