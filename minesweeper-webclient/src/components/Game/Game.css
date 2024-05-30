@@ -1,0 +1,10 @@
+.game {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin: 0 auto;
+    /* justify-content: center; */
+    box-sizing: content-box;
+    /* margin-top: 20px; */
+    font-size: 40px;
+    padding: 20px;
+}

@@ -1,5 +1,5 @@
 import './Field.css';
-import Cell from './Cell';
+import Cell from '../Cell/Cell';
 
 export default function Field({ size }) {
   const cellsCount = size ** 2;

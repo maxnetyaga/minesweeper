@@ -1,8 +1,8 @@
 import './Cell.css';
-import cellBg1 from '../assets/cells/1.png';
-import cellBg2 from '../assets/cells/2.png';
-import cellBg3 from '../assets/cells/3.png';
-import cellBg4 from '../assets/cells/4.png';
+import cellBg1 from '../../assets/cells/1.png';
+import cellBg2 from '../../assets/cells/2.png';
+import cellBg3 from '../../assets/cells/3.png';
+import cellBg4 from '../../assets/cells/4.png';
 import { useEffect, useRef } from 'react';
 
 function getRandomInt(max) {

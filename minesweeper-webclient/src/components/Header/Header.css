@@ -7,7 +7,7 @@
     line-height: 40px;
     padding: 5px 0;
     font-size: 45px;
-    background: repeat url("../assets/header_back.webp");
+    background: repeat url("../../assets/header_back.webp");
     box-shadow: 0 15px 5px black;;
 }
 
@@ -21,9 +21,9 @@ header {
 .pageName {
     display: flex;
     justify-content: center;
-    color: rgb(168, 8, 8);
+    color: var(--text-color);
     width: 320px;
-    background-color: rgb(27, 27, 27);
+    background-color: var(--text-bgcolor);
     border-radius: 4px;
     flex-direction: row;
 }

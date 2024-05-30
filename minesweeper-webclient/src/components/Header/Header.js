@@ -1,5 +1,5 @@
 import './Header.css';
-import logo from '../assets/logo.webp';
+import logo from '../../assets/logo.webp';
 
 export default function Header({ pageName }) {
   return (

@@ -54,7 +54,9 @@ button{
 /*End of reset css*/
 
 :root {
-  --header-color: #7469B6
+  --text-bgcolor: rgb(12, 12, 12);
+  --text-color: rgb(226, 14, 14);
+  --border-color: #FFD700
 }
 
 html {
