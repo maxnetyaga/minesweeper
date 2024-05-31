@@ -1,10 +1,29 @@
-import './Controls.css';
-import ServerControl from './ServerControl/ServerControl';
+import "./Controls.css";
 
-export default function Controls() {
-  return (
-    <div className="controls_box">
-      <ServerControl />
-    </div>
-  );
+import ServerControl from "./ConnectionControl/ServerControl";
+import GameControl from "./GameControl/GameControl";
+
+export default function Controls({
+    gameId,
+    gameStatus,
+    connectToServer,
+    fieldSize,
+    setFieldSize,
+    gameDifficulty,
+    setGameDifficulty,
+}) {
+    return (
+        <div className="control_box">
+            <ServerControl {...{ gameStatus, connectToServer }} />
+            <GameControl
+                {...{
+                    gameId,
+                    fieldSize,
+                    setFieldSize,
+                    gameDifficulty,
+                    setGameDifficulty,
+                }}
+            />
+        </div>
+    );
 }

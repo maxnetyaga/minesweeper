@@ -7,12 +7,3 @@
     text-align: center;
     border: 2px solid white;
 }
-
-*:disabled {
-    pointer-events: none;
-    opacity: 0.8;
-}
-
-input.invalid {
-    border-color: var(--text-color);
-}

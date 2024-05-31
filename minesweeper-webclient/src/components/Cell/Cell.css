@@ -4,8 +4,9 @@
 
     border: none;
     border-radius: 0;
-    background-color: black;
 
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .cell:hover {
@@ -14,4 +15,8 @@
 
 .cell:active {
     opacity: 0.5;
+}
+
+.cell:disabled {
+    opacity: 0.3;
 }

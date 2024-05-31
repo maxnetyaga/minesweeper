@@ -1,20 +1,37 @@
-.controls_box {
+*:disabled {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.control_box {
     display: flex;
+    gap: 10px;
+    height: fit-content;
+    width: 100% !important;
     flex-direction: column;
-    background: repeat url('../../assets/header_back.webp');
-    padding: 10px;
-    border: 3px solid var(--border-color);
     font-size: 30px;
-    width: fit-content;
+
 }
 
 .control {
     display: grid;
+    width: 100%;
+    padding: 10px;
+    background: repeat url('../../assets/header_back.webp');
+    border: 3px solid var(--border-color);
     grid-template-columns: 1fr 1fr;
     row-gap: 5px;
     column-gap: 5px;
-    /* border: 3px solid black; */
+    transition: all 200ms;
+}
+
+.control > .control_header {
+    grid-column: 1 / 3;
+    background-color: var(--text-bgcolor);
+    color: var(--text-color);
     padding: 5px;
+    text-align: center;
+    border: 2px solid white;
 }
 
 .control > label {
@@ -29,16 +46,36 @@
     font-family: inherit;
     background-color: var(--text-bgcolor);
     color: var(--text-color);
-    width: 150px;
-    font-size: 30px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 30px;   
+}
+
+.control > input:focus {
+    outline: 0;
+}
+
+.control > input.invalid {
+    transition: inherit;
+    border-color: var(--text-color);
 }
 
 .control > button {
     grid-column: 1 / 3;
+    transition: inherit;
     background-color: var(--text-bgcolor);
     color: var(--text-color);   
 }
 
 .control > button:hover {
     border-color: var(--text-color);
+}
+
+.control > select, .control > select > option {
+    font-family: inherit;
+    background-color: var(--text-bgcolor);
+    color: var(--text-color);
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 30px;   
 }

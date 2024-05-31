@@ -56,7 +56,8 @@ button{
 :root {
   --text-bgcolor: rgb(12, 12, 12);
   --text-color: rgb(226, 14, 14);
-  --border-color: #FFD700
+  --border-color: #af9608;
+  --header-height: 55px;
 }
 
 html {
