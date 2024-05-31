@@ -1,9 +1,20 @@
 '''minesweeper'''
 
-from typing import Self, List, Set, Dict, Literal
+from typing import Self, List, Tuple, Set, Dict, Literal
 import enum
 import random
 import itertools
+import math
+
+# Typings
+GameStatus = Literal['lost', 'won', 'inprogress']
+
+CellStateAction = Literal['hide', 'reveal']
+CellStateType = Literal['hidden', 'revealed', 'marked', 'exploded']
+CellId = int
+CellResponse = Tuple[CellId, CellStateType]
+
+GameResponse = Tuple[GameStatus, List[CellResponse]]
 
 
 class Minesweeper:
@@ -15,13 +26,25 @@ class Minesweeper:
         EASY = 0.16666
 
     class _Cell:
-        def __init__(self, game: 'Minesweeper', cell_id: int,
+        '''
+        Cell class\n
+        '-1' in value prop represents mine\n
+        '[0-8]' in value prop represents number of adjacent cells with mines 
+        '''
+
+        def __init__(self, parent_game: 'Minesweeper', cell_id: int,
                      value: int, adjacent_cells: Set['_Cell'] = None) -> None:
-            self._game = game
+            self._parent_game = parent_game
             self._cell_id = cell_id
             self.value = value
-            self._state: Literal['hidden', 'revealed'] = 'hidden'
+            self._state: CellStateType
+            self._state = 'hidden'
             self._adjacent_cells = adjacent_cells or set()
+
+        def __repr__(self):
+            string = f"{self.value:2d}({self._cell_id:5d})"
+            color = '\033[92m' if self.state == 'revealed' else ''
+            return color + string + '\033[0m'
 
         @property
         def adjacent_cells(self):
@@ -34,6 +57,39 @@ class Minesweeper:
                 assert len(self._adjacent_cells) <= 8
                 self._adjacent_cells.add(cell)
 
+        @property
+        def state(self):
+            return self._state
+
+        def set_state(self, action: CellStateAction,
+                      cell_responses: List[CellResponse] = None,
+                      activated_cells: Set['_Cell'] = None) -> List[CellResponse]:
+            cell_responses = cell_responses or []
+            activated_cells = activated_cells or set()
+            activated_cells.add(self)
+
+            if action == 'mark':
+                self._state = 'marked'
+                cell_responses.append((self._cell_id, 'marked'))
+
+            elif action == 'reveal':
+                self._state = 'revealed'
+                cell_responses.append((self._cell_id, 'revealed'))
+                self._parent_game._revealed_cells_count += 1
+                if self.value == 0:
+                    for adj_cell in self._adjacent_cells:
+                        if adj_cell.state == 'hidden':
+                            adj_cell.set_state(action, cell_responses,
+                                               activated_cells)
+                if self.value == -1:
+                    self._state = 'exploded'
+                    cell_responses.append((self._cell_id, 'exploded'))
+
+            else:
+                raise ValueError(f"{action!r}: Unknown action")
+
+            return cell_responses
+
     def __init__(self, field_size: int, difficulty: GameDifficulty) -> None:
         self._field_size = field_size
         self._field: List[List[Minesweeper._Cell]]
@@ -43,18 +99,19 @@ class Minesweeper:
 
         self._mine_count = round(difficulty.value * field_size**2)
         self._free_cells_count = field_size**2 - self._mine_count
+        self._revealed_cells_count = 0
+
+        self._game_status: GameStatus = 'inprogress'
 
         self._create_game()
 
     def __repr__(self) -> str:
-        return '\n'.join(
-            map(
-                lambda row: ' '.join(
-                    map(lambda cell: f"{cell.value:2d}", row)
-                ),
-                self._field
-            )
+        field: List[List[str]] = list(
+            map(lambda row: (list(map(str, row))), self._field)
         )
+        col_width = len(field[0][0])
+        row_height = math.ceil(col_width / 4)
+        return ('\n' * row_height).join(map(' '.join, field))
 
     def _create_field(self) -> Self:
         # filling field and fiels_index with cells
@@ -111,11 +168,31 @@ class Minesweeper:
             ._populate_mines() \
             ._populate_hints() \
 
-    # @staticmethod
-    # def _group_by_len(sequence, chunk_size) -> List:
-    #     return list(zip(*[iter(sequence)] * chunk_size))
+
+    def update_game_status(self, cell_response: CellResponse) -> GameStatus:
+        if self._revealed_cells_count == self._free_cells_count:
+            self._game_status = 'won'
+        if cell_response[1] == 'exploded':
+            self._game_status = 'lost'
+
+        return self._game_status
+
+    def take_step(self, cell_id: int, action: CellStateType) -> GameResponse:
+        if self._game_status != 'inprogress':
+            raise RuntimeError("Game is finished")
+
+        cell_responses = self._field_index[cell_id].set_state(action)
+
+        for response in cell_responses:
+            self.update_game_status(response)
+
+        return (self._game_status, cell_responses)
 
 
 if __name__ == "__main__":
-    game = Minesweeper(18, Minesweeper.GameDifficulty.EASY)
-    print(game)
+    game = Minesweeper(4, Minesweeper.GameDifficulty.EASY)
+    while True:
+        print(game)
+        step = int(input('step: '))
+        action = 'reveal'
+        print(game.take_step(step, action))
