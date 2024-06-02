@@ -1,35 +1,32 @@
 '''minesweeper'''
 
 from typing import Self, List, Tuple, Set, Dict, Literal
-import enum
 import random
 import itertools
 import math
 
+import minesweeper_server.config as conf
+
 # Typings
 GameStatus = Literal['lost', 'won', 'inprogress']
 
-CellStateAction = Literal['hide', 'reveal']
+CellStateAction = Literal['mark', 'unmark', 'reveal']
 CellStateType = Literal['hidden', 'revealed', 'marked', 'exploded']
 CellId = int
-CellResponse = Tuple[CellId, CellStateType]
+CellValue = int
+CellResponse = Tuple[CellId, CellStateType, CellValue]
 
 GameResponse = Tuple[GameStatus, List[CellResponse]]
 
 
 class Minesweeper:
     '''Minesweeper'''
-    class GameDifficulty(enum.Enum):
-        '''value is mine density'''
-        EXPERT = 0.20625
-        MEDIUM = 0.18888
-        EASY = 0.16666
 
     class _Cell:
         '''
         Cell class\n
         '-1' in value prop represents mine\n
-        '[0-8]' in value prop represents number of adjacent cells with mines 
+        '[0-8]' in value prop represents number of adjacent cells with mines
         '''
 
         def __init__(self, parent_game: 'Minesweeper', cell_id: int,
@@ -64,6 +61,7 @@ class Minesweeper:
         def set_state(self, action: CellStateAction,
                       cell_responses: List[CellResponse] = None,
                       activated_cells: Set['_Cell'] = None) -> List[CellResponse]:
+            '''set_state'''
             cell_responses = cell_responses or []
             activated_cells = activated_cells or set()
             activated_cells.add(self)
@@ -72,9 +70,13 @@ class Minesweeper:
                 self._state = 'marked'
                 cell_responses.append((self._cell_id, 'marked'))
 
+            elif action == 'unmark':
+                self._state = 'hidden'
+                cell_responses.append((self._cell_id, 'hidden'))
+
             elif action == 'reveal':
                 self._state = 'revealed'
-                cell_responses.append((self._cell_id, 'revealed'))
+                cell_responses.append((self._cell_id, 'revealed', self.value))
                 self._parent_game._revealed_cells_count += 1
                 if self.value == 0:
                     for adj_cell in self._adjacent_cells:
@@ -83,19 +85,22 @@ class Minesweeper:
                                                activated_cells)
                 if self.value == -1:
                     self._state = 'exploded'
-                    cell_responses.append((self._cell_id, 'exploded'))
+                    cell_responses.append(
+                        (self._cell_id, 'exploded', self.value))
 
             else:
                 raise ValueError(f"{action!r}: Unknown action")
 
             return cell_responses
 
-    def __init__(self, field_size: int, difficulty: GameDifficulty) -> None:
+    def __init__(self, field_size: int, difficulty: conf.GameDifficulty, init_cell_id: int) -> None:
         self._field_size = field_size
         self._field: List[List[Minesweeper._Cell]]
         self._field = [[None] * field_size for _ in range(field_size)]
         self._field_index: Dict[int, Minesweeper._Cell]
         self._field_index = {}
+
+        self._init_cell_id = init_cell_id
 
         self._mine_count = round(difficulty.value * field_size**2)
         self._free_cells_count = field_size**2 - self._mine_count
@@ -112,6 +117,11 @@ class Minesweeper:
         col_width = len(field[0][0])
         row_height = math.ceil(col_width / 4)
         return ('\n' * row_height).join(map(' '.join, field))
+
+    @property
+    def field_size(self):
+        '''field_size'''
+        return self._field_size
 
     def _create_field(self) -> Self:
         # filling field and fiels_index with cells
@@ -137,9 +147,16 @@ class Minesweeper:
         return self
 
     def _populate_mines(self) -> Self:
-        # flat indices
+        # prohibited to generate near initial cell
+        prohibited_indices = [
+            cell._cell_id for cell
+            in self._field_index[self._init_cell_id].adjacent_cells
+        ]
+        prohibited_indices.append(self._init_cell_id)
+
         mine_indices = random.sample(
-            range(self._field_size**2),
+            sorted(i for i in range(self._field_size**2)
+                   if i not in prohibited_indices),
             self._mine_count
         )
 
@@ -170,6 +187,7 @@ class Minesweeper:
 
 
     def update_game_status(self, cell_response: CellResponse) -> GameStatus:
+        '''update_game_status'''
         if self._revealed_cells_count == self._free_cells_count:
             self._game_status = 'won'
         if cell_response[1] == 'exploded':
@@ -177,7 +195,8 @@ class Minesweeper:
 
         return self._game_status
 
-    def take_step(self, cell_id: int, action: CellStateType) -> GameResponse:
+    def play(self, cell_id: int, action: CellStateType) -> GameResponse:
+        '''play'''
         if self._game_status != 'inprogress':
             raise RuntimeError("Game is finished")
 
@@ -190,9 +209,9 @@ class Minesweeper:
 
 
 if __name__ == "__main__":
-    game = Minesweeper(4, Minesweeper.GameDifficulty.EASY)
+    game = Minesweeper(4, Minesweeper.GameDifficulty.EASY, 0)
     while True:
         print(game)
         step = int(input('step: '))
         action = 'reveal'
-        print(game.take_step(step, action))
+        print(game.play(step, action))

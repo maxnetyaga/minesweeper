@@ -1,29 +1,26 @@
 import "./Field.css";
+
 import Cell from "../Cell/Cell";
 
 export default function Field({
+    field,
     fieldSize,
-    webSocket,
     gameStatus,
-    setGameStatus,
-    gameDifficulty,
+    startGame,
+    sendPlayEvent,
 }) {
-    const cellsCount = fieldSize ** 2;
-    const cells = [...Array(cellsCount).keys()].reduce((cells, cellId) => {
-        cells[cellId] = (
+    const cells = [...field.entries()].map((cell) => {
+        const cellId = cell[0];
+        const cellStatus = cell[1];
+        return (
             <Cell
                 key={cellId}
-                cellId={cellId}
-                disabled={!webSocket}
-                webSocket={webSocket}
-                gameStatus={gameStatus}
-                setGameStatus={setGameStatus}
-                fieldSize={fieldSize}
-                gameDifficulty={gameDifficulty}
+                id={cellId}
+                status={cellStatus}
+                {...{ gameStatus, startGame, sendPlayEvent }}
             />
         );
-        return cells;
-    }, {});
+    });
 
     const fieldGridStyle = {
         "grid-template-columns": `repeat(${fieldSize}, 1fr)`,

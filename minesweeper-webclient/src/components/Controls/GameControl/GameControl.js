@@ -6,12 +6,14 @@ import { config } from "../../../config";
 
 export default function GameControl({
     gameId,
+    gameStatus,
     fieldSize,
     setFieldSize,
     gameDifficulty,
     setGameDifficulty,
 }) {
     const [inputFieldSize, setInputFieldSize] = useState(fieldSize);
+    const isControlDisabled = gameStatus === "In Progress...";
 
     const changeFieldSize = (e) => {
         let newSize = e.target.value;
@@ -30,8 +32,9 @@ export default function GameControl({
     return (
         <div className="control">
             <div className="control_header">Game control</div>
-            <label>Field Size</label>
+            <label>Field Size:</label>
             <input
+                disabled={isControlDisabled}
                 className={fieldSize ? "" : "invalid"}
                 value={inputFieldSize}
                 onChange={changeFieldSize}
@@ -39,8 +42,9 @@ export default function GameControl({
                 id="field_size"
             ></input>
 
-            <label>Difficulty</label>
+            <label>Difficulty:</label>
             <select
+                disabled={isControlDisabled}
                 value={gameDifficulty}
                 onChange={(e) => setGameDifficulty(e.target.value)}
                 name="difficulty"

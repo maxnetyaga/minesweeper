@@ -1,49 +1,86 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import "./Cell.css";
 
-import cellBg1 from "../../assets/cells/1.png";
-import cellBg2 from "../../assets/cells/2.png";
-import cellBg3 from "../../assets/cells/3.png";
-import cellBg4 from "../../assets/cells/4.png";
+import { config } from "../../config";
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
 
-const CELL_BGS = [cellBg1, cellBg2, cellBg3, cellBg4];
+const CELL_HIDDEN_BGS = config.cellBackgrounds;
+const CELL_REVEALED_BGS = config.cellRevealedTextures;
+const CELL_MARKED_BG = config.cellMarkedTexture;
+const CELL_BOMB_BG = config.cellBombTexture;
 
 export default function Cell({
-    cellId,
-    disabled,
-    webSocket,
+    id,
+    status,
     gameStatus,
-    setGameStatus,
-    fieldSize,
-    gameDifficulty,
+    startGame,
+    sendPlayEvent,
 }) {
-    const cellBackground = useRef(CELL_BGS[getRandomInt(CELL_BGS.length)]);
+    const cellHiddenBgRef = useRef(
+        CELL_HIDDEN_BGS[getRandomInt(CELL_HIDDEN_BGS.length)]
+    );
 
-    const revealCell = async (e) => {
+    const getBgImage = () => {
+        let bgPath;
+
+        switch (status?.state) {
+            case "revealed": {
+                bgPath = CELL_REVEALED_BGS[status.value];
+                break;
+            }
+            case "marked": {
+                bgPath = CELL_MARKED_BG;
+                break;
+            }
+            case "exploded": {
+                bgPath = CELL_BOMB_BG;
+                break;
+            }
+            default:
+                bgPath = cellHiddenBgRef.current;
+                break;
+        }
+
+        return `url(${bgPath})`;
+    };
+
+    const cellBg = getBgImage();
+
+    const revealCell = (e) => {
         e.preventDefault();
+
         if (gameStatus === "Connected") {
-            const event = {
-                action: "start",
-                fieldSize: fieldSize,
-                gameDifficulty: gameDifficulty.toUpperCase(),
-            };
-            webSocket.send(JSON.stringify(event));
+            startGame(id);
+        }
+
+        if (gameStatus === "In Progress...") {
+            sendPlayEvent(id, "reveal");
         }
     };
 
     const markCell = async (e) => {
         e.preventDefault();
+
+        if (gameStatus === "In Progress...") {
+            let event;
+            if (!status || status.state === "hidden") {
+                event = "mark";
+            } else if (status?.state === "marked") {
+                event = "unmark";
+            } else return;
+
+            sendPlayEvent(id, event);
+        }
     };
 
     return (
         <button
-            disabled={disabled}
-            style={{ backgroundImage: `url(${cellBackground.current})` }}
+            disabled={!["Connected", "In Progress..."].includes(gameStatus)}
+            style={{ backgroundImage: cellBg }}
             className="cell"
             onClick={revealCell}
             onContextMenu={markCell}

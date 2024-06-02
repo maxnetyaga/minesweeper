@@ -24,12 +24,14 @@ export default function ServerControl({ gameStatus, connectToServer }) {
         await connectToServer(ip, port);
     };
 
-    const isControlDisabled = gameStatus === "Connected";
+    const isControlDisabled = ["Connected", "In Progress..."].includes(
+        gameStatus
+    );
 
     return (
         <div className="control">
             <div className="control_header">Server control</div>
-            <label>Server address</label>
+            <label>Server address:</label>
             <input
                 disabled={isControlDisabled}
                 className={isIpValid ? "" : "invalid"}
@@ -40,7 +42,7 @@ export default function ServerControl({ gameStatus, connectToServer }) {
                 type="text"
             />
 
-            <label>Server Port</label>
+            <label>Server Port:</label>
             <input
                 disabled={isControlDisabled}
                 className={isPortValid ? "" : "invalid"}

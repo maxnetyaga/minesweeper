@@ -10,55 +10,24 @@ import string
 
 import websockets
 
-from minesweeper_server.minesweeper import Minesweeper
-
-MIN_FIELD_SIZE = 1
-
-GAMEID_LEN = 8
-CONNECT_ACTIONS = ["start", "join"]
-
-SERVER_PORT = 8001
+from minesweeper_server.minesweeper import Minesweeper, GameResponse
+import minesweeper_server.config as conf
+import minesweeper_server.message_parsing as mp
 
 GAMES: Dict[str, Tuple[Minesweeper, Set[websockets.WebSocketServerProtocol]]]
 GAMES = {}
 
 
-def gen_gameid(id_len: int) -> str:
+def gen_game_id(id_len: int) -> str:
     '''gen_gameid'''
-    return ''.join(rnd.choices(string.ascii_lowercase + string.digits, k=id_len))
+    def gen_id():
+        return ''.join(rnd.choices(string.ascii_lowercase + string.digits, k=id_len))
 
+    game_id = gen_id()
+    while game_id in GAMES.keys():  # avoid destroying current game
+        game_id = gen_id()
 
-def validate_init_event(event: Dict):
-    '''validate_init_event'''
-    error = None
-
-    if not isinstance(event, dict):
-        error = "Event must be json object"
-
-    if event.get("action") not in CONNECT_ACTIONS:
-        error = "Connect action is invalid or missing"
-
-    # if not ((isinstance(event.get("gameId"), str))
-    #         and (len(event.get("gameId")) == GAMEID_LEN)):
-    #     error = f"gameId must be a string of length {GAMEID_LEN}"
-
-    match event["action"]:
-        case "start":
-            field_size = event.get("fieldSize")
-            if not (isinstance(field_size, int) and field_size >= MIN_FIELD_SIZE):
-                error = ("fieldSize is missing or invalid. "
-                         f"fieldSize must be an ineger >= {MIN_FIELD_SIZE}")
-
-            game_difficulty = event.get("gameDifficulty")
-            possible_difficulties = [
-                d.name for d in Minesweeper.GameDifficulty
-            ]
-
-            if game_difficulty not in possible_difficulties:
-                error = ("gameDifficulty is missing or invalid. "
-                         f"gameDifficulty must be {possible_difficulties}")
-
-    return error
+    return game_id
 
 
 async def send_error(websocket: websockets.WebSocketServerProtocol, message):
@@ -77,15 +46,38 @@ def disconnect_player(websocket: websockets.WebSocketServerProtocol, game_id):
     print(f"{websocket.remote_address} left game#{game_id}")
 
 
-async def start_game(websocket: websockets.WebSocketServerProtocol, field_size, game_difficulty):
-    '''start_game'''
-    game = Minesweeper(field_size, Minesweeper.GameDifficulty[game_difficulty])
-    connected = {websocket}
+async def play_game(websocket: websockets.WebSocketServerProtocol,
+                    game: Minesweeper,
+                    connected_users: Set[websockets.WebSocketServerProtocol],
+                    ):
+    '''play_game'''
+    async for msg in websocket:
+        event = mp.parse_play(json.loads(msg), game.field_size)
 
-    game_id = gen_gameid(GAMEID_LEN)
-    while game_id in GAMES.keys():  # avoid destroying current game
-        game_id = gen_gameid(GAMEID_LEN)
-    GAMES[game_id] = game, connected
+        try:
+            move = game.play(
+                event['cell_id'], event['action']
+            )
+            respons = {
+                "action": "move",
+                "moveData": move
+            }
+        except RuntimeError as exc:
+            await send_error(websocket, str(exc))
+            continue
+
+        websockets.broadcast(connected_users, json.dumps(respons))
+
+
+async def start_game(websocket: websockets.WebSocketServerProtocol, field_size: int,
+                     game_difficulty: conf.GameDifficulty, init_cell_id: int):
+    '''start_game'''
+    game = Minesweeper(field_size, conf.GameDifficulty[game_difficulty],
+                       init_cell_id)
+    connected_users = {websocket}
+    game_id = gen_game_id(conf.GAMEID_LEN)
+
+    GAMES[game_id] = game, connected_users
 
     print(f"{websocket.remote_address} started new game")
 
@@ -95,30 +87,33 @@ async def start_game(websocket: websockets.WebSocketServerProtocol, field_size, 
             "gameId": game_id
         }
         await websocket.send(json.dumps(event))
-        await asyncio.sleep(15)
+        await play_game(websocket, game, connected_users)
     finally:
         disconnect_player(websocket, game_id)
 
 
-async def handler(websocket):
-    message = await websocket.recv()
-    event = json.loads(message)
+async def handler(websocket: websockets.WebSocketServerProtocol):
+    '''handler'''
+    try:
+        message = await websocket.recv()
+        print(message)
 
-    error = validate_init_event(event)
-    if error:
-        print(f"Player init failed: {error}")
-        await send_error(websocket, error)
-        return
+        event = mp.parse_init(json.loads(message))
 
-    match event["action"]:
-        case "join":
-            pass
-        case "start":
-            await start_game(websocket, event["fieldSize"], event["gameDifficulty"])
+        match event["action"]:
+            case "join":
+                pass
+            case "start":
+                await start_game(websocket, event["field_size"],
+                                 event["game_difficulty"], event["init_cell_id"])
+    except Exception as exc:
+        await send_error(websocket, str(exc))
+        raise RuntimeError(f"{websocket} error.") from exc
 
 
 async def main():
-    async with websockets.serve(handler, "", SERVER_PORT):
+    '''main'''
+    async with websockets.serve(handler, "", conf.SERVER_PORT):
         await asyncio.Future()  # run forever
 
 
