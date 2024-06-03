@@ -34,4 +34,5 @@ export const config = {
     defFieldSize: 16,
     minFieldSize: 4,
     maxFieldSize: 48,
+    gameIdLen: 8,
 };

@@ -13,6 +13,7 @@ import websockets
 from minesweeper_server.minesweeper import Minesweeper
 import minesweeper_server.config as conf
 import minesweeper_server.message_parsing as mp
+import minesweeper_server.responses as r
 
 GAMES: Dict[str, Tuple[Minesweeper, Set[websockets.WebSocketServerProtocol]]]
 GAMES = {}
@@ -39,24 +40,28 @@ async def send_error(user: websockets.WebSocketServerProtocol, message):
     await user.send(json.dumps(event))
 
 
-def disconnect_all_users(game_id):
+async def disconnect_all(game_id):
     '''disconnect_all_users'''
     connected_users = GAMES[game_id][1].copy()
 
     for user in connected_users:
-        disconnect_user(user, game_id)
+        await disconnect(user, game_id)
 
 
-def disconnect_user(player: websockets.WebSocketServerProtocol, game_id):
+async def disconnect(user: websockets.WebSocketServerProtocol, game_id):
     '''disconnect_player'''
     game = GAMES.get(game_id)
     if not game:
         return
 
     connected_users = game[1]
-    connected_users.remove(player)
+    if not user in connected_users:
+        return
 
-    print(f"Player {player.remote_address} left game#{game_id}.")
+    connected_users.remove(user)
+    await user.close()
+
+    print(f"Player {user.remote_address} left game#{game_id}.")
 
     if len(connected_users) == 0:
         end_game(game_id)
@@ -80,16 +85,13 @@ async def play_game(user: websockets.WebSocketServerProtocol,
         move = game.play(
             event['cell_id'], event['action']
         )
-        respons = {
-            "action": "move",
-            "moveData": move
-        }
+        respons = r.move_response(move)
 
         websockets.broadcast(connected_users, json.dumps(respons))
 
-        is_game_finished = move[0] in ["lost", "won"]
+        is_game_finished = game.game_status in ["lost", "won"]
         if is_game_finished:
-            disconnect_all_users(game_id)
+            await disconnect_all(game_id)
             return
 
 
@@ -108,12 +110,46 @@ async def start_game(user: websockets.WebSocketServerProtocol, field_size: int,
     try:
         event = {
             "action": "init",
-            "gameId": game_id
+            "gameId": game_id,
+            "fieldSize": field_size,
+            "gameDifficulty": game_difficulty
         }
         await user.send(json.dumps(event))
+        print(f"Sent game init to player {
+              user.remote_address}. Game init: {event}")
+
         await play_game(user, game_id)
     finally:
-        disconnect_user(user, game_id)
+        await disconnect(user, game_id)
+
+
+async def join_game(user: websockets.WebSocketServerProtocol, game_id):
+    '''join_game'''
+    if game_id not in GAMES.keys():
+        raise RuntimeError(f"Game #{game_id} not found.")
+
+    game, connected_users = GAMES[game_id]
+    connected_users.add(user)
+    print(f"{user.remote_address} joined game #{game_id}.")
+
+    try:
+        event = {
+            "action": "init",
+            "gameId": game_id,
+            "fieldSize": game.field_size,
+            "gameDifficulty": game.game_difficulty
+        }
+        await user.send(json.dumps(event))
+        print(f"Sent game init to player {
+              user.remote_address}. Game init: {event}")
+
+        game_history = r.move_response(game.snapshot)
+        await user.send(json.dumps(game_history))
+        print(f"Sent game #{game_id} history to player {user.remote_address}.")
+
+        await play_game(user, game_id)
+    finally:
+        await disconnect(user, game_id)
 
 
 async def handler(user: websockets.WebSocketServerProtocol):
@@ -126,7 +162,7 @@ async def handler(user: websockets.WebSocketServerProtocol):
 
         match event["action"]:
             case "join":
-                pass
+                await join_game(user, event["game_id"])
             case "start":
                 await start_game(user, event["field_size"],
                                  event["game_difficulty"], event["init_cell_id"])

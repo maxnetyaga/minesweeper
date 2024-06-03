@@ -104,12 +104,15 @@ class Minesweeper:
 
         self._init_cell_id = init_cell_id
 
+        self._game_difficulty = difficulty.name
         self._mine_count = round(difficulty.value * field_size**2)
         self._free_cells_count = field_size**2 - self._mine_count
         self._revealed_cells_count = 0
         self._marked_cells_count = 0
 
         self._game_status: GameStatus = 'inprogress'
+
+        self._move_history: List[CellResponse] = []
 
         self._create_game()
 
@@ -125,6 +128,14 @@ class Minesweeper:
     def field_size(self):
         '''field_size'''
         return self._field_size
+
+    @property
+    def game_difficulty(self):
+        return self._game_difficulty
+
+    @property
+    def game_status(self):
+        return self._game_status
 
     def _create_field(self) -> Self:
         # filling field and fiels_index with cells
@@ -189,7 +200,7 @@ class Minesweeper:
             ._populate_hints() \
 
 
-    def update_game_status(self, cell_response: CellResponse) -> GameStatus:
+    def _update_game_status(self, cell_response: CellResponse) -> GameStatus:
         '''update_game_status'''
         if (self._revealed_cells_count == self._free_cells_count
                 and self._marked_cells_count == self._mine_count):
@@ -205,11 +216,17 @@ class Minesweeper:
             raise RuntimeError("Game is finished")
 
         cell_responses = self._field_index[cell_id].set_state(action)
+        self._move_history.extend(cell_responses)
 
         for response in cell_responses:
-            self.update_game_status(response)
+            self._update_game_status(response)
 
         return (self._game_status, cell_responses)
+
+    @property
+    def snapshot(self) -> GameResponse:
+        '''snapshot'''
+        return (self._game_status, self._move_history)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ export default function Controls({
     setField,
     gameDifficulty,
     setGameDifficulty,
+    joinGame,
 }) {
     return (
         <div className="control_box">
@@ -26,7 +27,7 @@ export default function Controls({
                     setGameDifficulty,
                 }}
             />
-            <JoinControl />
+            <JoinControl {...{ gameId, gameStatus, joinGame }} />
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./GameControl.css";
 
@@ -13,29 +13,33 @@ export default function GameControl({
     setGameDifficulty,
 }) {
     const [inputFieldSize, setInputFieldSize] = useState(fieldSize);
-    const isControlDisabled = gameStatus === "In Progress...";
 
     const changeFieldSize = (e) => {
-        let newSize = e.target.value;
-        setInputFieldSize(newSize);
-        newSize = Number(newSize);
+        const inputValue = e.target.value;
+        setInputFieldSize(inputValue);
 
         if (
-            !(newSize >= config.minFieldSize && newSize <= config.maxFieldSize)
-        ) {
-            setField(null);
-        } else {
-            setField(newSize);
-        }
+            inputValue < config.minFieldSize ||
+            inputValue > config.maxFieldSize
+        )
+            return;
+        setField(inputValue);
     };
+
+    const isGameControlDisabled =
+        gameStatus !== "Connected" || gameStatus === "In Progress...";
+
+    useEffect(() => {
+        setInputFieldSize(fieldSize);
+    }, [fieldSize]);
 
     return (
         <div className="control">
             <div className="control_header">Game control</div>
             <label>Field Size:</label>
             <input
-                disabled={isControlDisabled}
-                className={fieldSize ? "" : "invalid"}
+                disabled={isGameControlDisabled}
+                className={fieldSize === inputFieldSize ? "" : "invalid"}
                 value={inputFieldSize}
                 onChange={changeFieldSize}
                 name="field_size"
@@ -44,8 +48,8 @@ export default function GameControl({
 
             <label>Difficulty:</label>
             <select
-                disabled={isControlDisabled}
-                value={gameDifficulty}
+                disabled={isGameControlDisabled}
+                value={gameDifficulty.toUpperCase()}
                 onChange={(e) => setGameDifficulty(e.target.value)}
                 name="difficulty"
                 id="difficulty"

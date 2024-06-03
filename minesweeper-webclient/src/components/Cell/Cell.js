@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { CSSTransition } from "react-transition-group";
 
 import "./Cell.css";
 
@@ -13,42 +14,48 @@ const CELL_REVEALED_BGS = config.cellRevealedTextures;
 const CELL_MARKED_BG = config.cellMarkedTexture;
 const CELL_BOMB_BG = config.cellBombTexture;
 
+const wrapInUrl = (path) => {
+    return `url(${path})`;
+};
+
+const getCellBg = (state, value) => {
+    let bgPath;
+
+    switch (state) {
+        case "revealed": {
+            bgPath = CELL_REVEALED_BGS[value];
+            break;
+        }
+        case "marked": {
+            bgPath = CELL_MARKED_BG;
+            break;
+        }
+        case "exploded": {
+            bgPath = CELL_BOMB_BG;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return bgPath;
+};
+
 export default function Cell({
     id,
-    status,
+    state,
+    value,
     gameStatus,
     startGame,
     sendPlayEvent,
 }) {
-    const cellHiddenBgRef = useRef(
+    const btnRef = useRef(null);
+
+    const cellDefBg = useRef(
         CELL_HIDDEN_BGS[getRandomInt(CELL_HIDDEN_BGS.length)]
-    );
+    ).current;
 
-    const getBgImage = () => {
-        let bgPath;
-
-        switch (status?.state) {
-            case "revealed": {
-                bgPath = CELL_REVEALED_BGS[status.value];
-                break;
-            }
-            case "marked": {
-                bgPath = CELL_MARKED_BG;
-                break;
-            }
-            case "exploded": {
-                bgPath = CELL_BOMB_BG;
-                break;
-            }
-            default:
-                bgPath = cellHiddenBgRef.current;
-                break;
-        }
-
-        return `url(${bgPath})`;
-    };
-
-    const cellBg = getBgImage();
+    const cellBg = getCellBg(state, value) || cellDefBg;
 
     const revealCell = (e) => {
         e.preventDefault();
@@ -67,9 +74,9 @@ export default function Cell({
 
         if (gameStatus === "In Progress...") {
             let event;
-            if (!status || status.state === "hidden") {
+            if (!state || state === "hidden") {
                 event = "mark";
-            } else if (status?.state === "marked") {
+            } else if (state === "marked") {
                 event = "unmark";
             } else return;
 
@@ -77,17 +84,24 @@ export default function Cell({
         }
     };
 
-    if (status?.state === "revealed") {
-        
+    if (state === "revealed") {
     }
 
     return (
-        <button
-            disabled={!["Connected", "In Progress..."].includes(gameStatus)}
-            style={{ backgroundImage: cellBg }}
-            className="cell"
-            onClick={revealCell}
-            onContextMenu={markCell}
-        ></button>
+        <CSSTransition
+            nodeRef={btnRef}
+            in={state !== "hidden"}
+            timeout={500}
+            classNames={"cell"}
+        >
+            <button
+                ref={btnRef}
+                disabled={!["Connected", "In Progress..."].includes(gameStatus)}
+                style={{ backgroundImage: wrapInUrl(cellBg) }}
+                className="cell"
+                onClick={revealCell}
+                onContextMenu={markCell}
+            />
+        </CSSTransition>
     );
 }

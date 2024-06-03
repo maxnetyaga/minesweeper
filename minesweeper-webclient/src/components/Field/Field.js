@@ -11,13 +11,13 @@ export default function Field({
 }) {
     const cells = [...field.entries()].map((cell) => {
         const cellId = cell[0];
-        const cellStatus = cell[1];
+        const cellStatus = cell[1] || { state: "hidden", value: undefined };
         return (
             <Cell
                 key={cellId}
                 id={cellId}
-                status={cellStatus}
-                {...{ gameStatus, startGame, sendPlayEvent }}
+                {...cellStatus}
+                {...{ field, gameStatus, startGame, sendPlayEvent }}
             />
         );
     });

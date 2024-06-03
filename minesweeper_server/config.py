@@ -10,7 +10,8 @@ class GameDifficulty(enum.Enum):
 
 SERVER_PORT = 8001
 
-MIN_FIELD_SIZE = 1
+MIN_FIELD_SIZE = 4
+MAX_FIELD_SIZE = 48
 
 GAMEID_LEN = 8
 CONNECT_ACTIONS = ["start", "join"]

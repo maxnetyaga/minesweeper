@@ -19,6 +19,7 @@ def _check_field_size(event):
     is_field_size_valid = (
         isinstance(field_size, int)
         and field_size >= conf.MIN_FIELD_SIZE
+        and field_size <= conf.MAX_FIELD_SIZE
     )
     if not is_field_size_valid:
         raise ValueError(f"fieldSize must be an ineger >= {
@@ -49,13 +50,26 @@ def _check_cell_id(event, field_size):
             f"cellId is missing or has invalid type. {event=}"
         )
 
-    cell_id = int(cell_id)
-
     is_cell_id_valid = cell_id < field_size**2
     if not is_cell_id_valid:
         raise ValueError(f"cellId must be < field_size^2. {event=}")
 
     return cell_id
+
+
+def _check_game_id(event):
+    game_id = event.get("gameId")
+    if not isinstance(game_id, str):
+        raise ValueError(
+            f"gameId is missing or has invalid type. {event=}"
+        )
+
+    is_game_id_valid = len(game_id) == conf.GAMEID_LEN
+    if not is_game_id_valid:
+        raise ValueError(f"gameId must have length of {
+                         conf.GAMEID_LEN}. {event=}")
+
+    return game_id
 
 
 def parse_init(event):
@@ -73,6 +87,8 @@ def parse_init(event):
                 result["game_difficulty"] = _check_game_difficulty(event)
                 result["init_cell_id"] = _check_cell_id(
                     event, result["field_size"])
+            case "join":
+                result["game_id"] = _check_game_id(event)
 
         return result
     except ValueError as e:

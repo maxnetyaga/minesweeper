@@ -24,7 +24,7 @@ export default function ServerControl({ gameStatus, connectToServer }) {
         await connectToServer(ip, port);
     };
 
-    const isControlDisabled = ["Connected", "In Progress..."].includes(
+    const isServerControlDisabled = ["Connected", "In Progress..."].includes(
         gameStatus
     );
 
@@ -33,7 +33,7 @@ export default function ServerControl({ gameStatus, connectToServer }) {
             <div className="control_header">Server control</div>
             <label>Server address:</label>
             <input
-                disabled={isControlDisabled}
+                disabled={isServerControlDisabled}
                 className={isIpValid ? "" : "invalid"}
                 ref={ipInputRef}
                 name="ipv4"
@@ -44,7 +44,7 @@ export default function ServerControl({ gameStatus, connectToServer }) {
 
             <label>Server Port:</label>
             <input
-                disabled={isControlDisabled}
+                disabled={isServerControlDisabled}
                 className={isPortValid ? "" : "invalid"}
                 ref={portInputRef}
                 name="port"
@@ -52,7 +52,7 @@ export default function ServerControl({ gameStatus, connectToServer }) {
                 id="port"
                 type="text"
             />
-            <button disabled={isControlDisabled} onClick={connButonClick}>
+            <button disabled={isServerControlDisabled} onClick={connButonClick}>
                 Connect to server
             </button>
             <div className="connection_status">{gameStatus}</div>

@@ -29,6 +29,13 @@ export const getStartEvent = (fieldSize, gameDifficulty, initCellId) => {
     };
 };
 
+export const getJoinEvent = (gameId) => {
+    return {
+        action: "join",
+        gameId: gameId,
+    };
+};
+
 export const getPlayEvent = (cellId, playAction) => {
     return {
         action: playAction,

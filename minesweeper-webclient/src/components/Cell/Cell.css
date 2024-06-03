@@ -12,6 +12,24 @@
     line-height: 15px;
 }
 
+.cell-enter {
+    opacity: 0;
+}
+
+.cell-enter-active {
+    opacity: 1;
+    transition: opacity 300ms;
+}
+
+.cell-exit {
+    opacity: 0;
+}
+
+.cell-exit-active {
+    opacity: 1;
+    transition: opacity 300ms;
+}
+
 .cell:hover {
     border: 1px solid red;
 }
