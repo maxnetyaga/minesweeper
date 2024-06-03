@@ -77,6 +77,10 @@ export default function Cell({
         }
     };
 
+    if (status?.state === "revealed") {
+        
+    }
+
     return (
         <button
             disabled={!["Connected", "In Progress..."].includes(gameStatus)}

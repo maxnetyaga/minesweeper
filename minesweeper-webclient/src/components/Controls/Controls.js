@@ -2,13 +2,14 @@ import "./Controls.css";
 
 import ServerControl from "./ConnectionControl/ServerControl";
 import GameControl from "./GameControl/GameControl";
+import JoinControl from "./JoinControl/JoinControl";
 
 export default function Controls({
     gameId,
     gameStatus,
     connectToServer,
     fieldSize,
-    setFieldSize,
+    setField,
     gameDifficulty,
     setGameDifficulty,
 }) {
@@ -20,11 +21,12 @@ export default function Controls({
                     gameId,
                     gameStatus,
                     fieldSize,
-                    setFieldSize,
+                    setField,
                     gameDifficulty,
                     setGameDifficulty,
                 }}
             />
+            <JoinControl />
         </div>
     );
 }

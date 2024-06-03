@@ -8,7 +8,7 @@ export default function GameControl({
     gameId,
     gameStatus,
     fieldSize,
-    setFieldSize,
+    setField,
     gameDifficulty,
     setGameDifficulty,
 }) {
@@ -23,9 +23,9 @@ export default function GameControl({
         if (
             !(newSize >= config.minFieldSize && newSize <= config.maxFieldSize)
         ) {
-            setFieldSize(null);
+            setField(null);
         } else {
-            setFieldSize(newSize);
+            setField(newSize);
         }
     };
 

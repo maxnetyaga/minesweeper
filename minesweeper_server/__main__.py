@@ -10,7 +10,7 @@ import string
 
 import websockets
 
-from minesweeper_server.minesweeper import Minesweeper, GameResponse
+from minesweeper_server.minesweeper import Minesweeper
 import minesweeper_server.config as conf
 import minesweeper_server.message_parsing as mp
 
@@ -30,73 +30,97 @@ def gen_game_id(id_len: int) -> str:
     return game_id
 
 
-async def send_error(websocket: websockets.WebSocketServerProtocol, message):
+async def send_error(user: websockets.WebSocketServerProtocol, message):
     '''send_error'''
     event = {
         "action": "error",
         "message": message
     }
-    await websocket.send(json.dumps(event))
+    await user.send(json.dumps(event))
 
 
-def disconnect_player(websocket: websockets.WebSocketServerProtocol, game_id):
+def disconnect_all_users(game_id):
+    '''disconnect_all_users'''
+    connected_users = GAMES[game_id][1].copy()
+
+    for user in connected_users:
+        disconnect_user(user, game_id)
+
+
+def disconnect_user(player: websockets.WebSocketServerProtocol, game_id):
     '''disconnect_player'''
-    connected_players = GAMES[game_id][1]
-    connected_players.remove(websocket)
-    print(f"{websocket.remote_address} left game#{game_id}")
+    game = GAMES.get(game_id)
+    if not game:
+        return
+
+    connected_users = game[1]
+    connected_users.remove(player)
+
+    print(f"Player {player.remote_address} left game#{game_id}.")
+
+    if len(connected_users) == 0:
+        end_game(game_id)
 
 
-async def play_game(websocket: websockets.WebSocketServerProtocol,
-                    game: Minesweeper,
-                    connected_users: Set[websockets.WebSocketServerProtocol],
-                    ):
+def end_game(game_id):
+    '''end_game'''
+    del GAMES[game_id]
+    print(f"Game #{game_id} finished.")
+
+
+async def play_game(user: websockets.WebSocketServerProtocol,
+                    game_id):
     '''play_game'''
-    async for msg in websocket:
-        event = mp.parse_play(json.loads(msg), game.field_size)
+    game, connected_users = GAMES[game_id]
 
-        try:
-            move = game.play(
-                event['cell_id'], event['action']
-            )
-            respons = {
-                "action": "move",
-                "moveData": move
-            }
-        except RuntimeError as exc:
-            await send_error(websocket, str(exc))
-            continue
+    async for msg in user:
+        event = mp.parse_play(json.loads(msg), game.field_size)
+        print(f"Player {user.remote_address} has sent move: {msg}")
+
+        move = game.play(
+            event['cell_id'], event['action']
+        )
+        respons = {
+            "action": "move",
+            "moveData": move
+        }
 
         websockets.broadcast(connected_users, json.dumps(respons))
 
+        is_game_finished = move[0] in ["lost", "won"]
+        if is_game_finished:
+            disconnect_all_users(game_id)
+            return
 
-async def start_game(websocket: websockets.WebSocketServerProtocol, field_size: int,
+
+async def start_game(user: websockets.WebSocketServerProtocol, field_size: int,
                      game_difficulty: conf.GameDifficulty, init_cell_id: int):
     '''start_game'''
     game = Minesweeper(field_size, conf.GameDifficulty[game_difficulty],
                        init_cell_id)
-    connected_users = {websocket}
+    connected_users = {user}
     game_id = gen_game_id(conf.GAMEID_LEN)
 
     GAMES[game_id] = game, connected_users
 
-    print(f"{websocket.remote_address} started new game")
+    print(f"{user.remote_address} started new game #{game_id}.")
 
     try:
         event = {
             "action": "init",
             "gameId": game_id
         }
-        await websocket.send(json.dumps(event))
-        await play_game(websocket, game, connected_users)
+        await user.send(json.dumps(event))
+        await play_game(user, game_id)
     finally:
-        disconnect_player(websocket, game_id)
+        disconnect_user(user, game_id)
 
 
-async def handler(websocket: websockets.WebSocketServerProtocol):
+async def handler(user: websockets.WebSocketServerProtocol):
     '''handler'''
     try:
-        message = await websocket.recv()
-        print(message)
+        message = await user.recv()
+        print(f"Player {user.remote_address} has sent init: {message}")
 
         event = mp.parse_init(json.loads(message))
 
@@ -104,17 +128,17 @@ async def handler(websocket: websockets.WebSocketServerProtocol):
             case "join":
                 pass
             case "start":
-                await start_game(websocket, event["field_size"],
+                await start_game(user, event["field_size"],
                                  event["game_difficulty"], event["init_cell_id"])
     except Exception as exc:
-        await send_error(websocket, str(exc))
-        raise RuntimeError(f"{websocket} error.") from exc
+        await send_error(user, str(exc))
+        raise RuntimeError(f"Player {user.remote_address} error.") from exc
 
 
 async def main():
     '''main'''
     async with websockets.serve(handler, "", conf.SERVER_PORT):
-        await asyncio.Future()  # run forever
+        await asyncio.Future()
 
 
 if __name__ == "__main__":

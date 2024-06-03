@@ -68,10 +68,12 @@ class Minesweeper:
 
             if action == 'mark':
                 self._state = 'marked'
+                self._parent_game._marked_cells_count += 1
                 cell_responses.append((self._cell_id, 'marked'))
 
             elif action == 'unmark':
                 self._state = 'hidden'
+                self._parent_game._marked_cells_count -= 1
                 cell_responses.append((self._cell_id, 'hidden'))
 
             elif action == 'reveal':
@@ -105,6 +107,7 @@ class Minesweeper:
         self._mine_count = round(difficulty.value * field_size**2)
         self._free_cells_count = field_size**2 - self._mine_count
         self._revealed_cells_count = 0
+        self._marked_cells_count = 0
 
         self._game_status: GameStatus = 'inprogress'
 
@@ -188,7 +191,8 @@ class Minesweeper:
 
     def update_game_status(self, cell_response: CellResponse) -> GameStatus:
         '''update_game_status'''
-        if self._revealed_cells_count == self._free_cells_count:
+        if (self._revealed_cells_count == self._free_cells_count
+                and self._marked_cells_count == self._mine_count):
             self._game_status = 'won'
         if cell_response[1] == 'exploded':
             self._game_status = 'lost'

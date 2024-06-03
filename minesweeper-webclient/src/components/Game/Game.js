@@ -20,7 +20,7 @@ export function Game() {
     const [field, updateField] = useImmer(Array(config.defFieldSize ** 2));
 
     const fieldSize = useMemo(() => Math.sqrt(field.length), [field]);
-    const setFieldSize = (fieldSize) =>
+    const setField = (fieldSize) =>
         updateField((draft) => (draft = Array(fieldSize ** 2)));
 
     const [gameDifficulty, setGameDifficulty] = useState("Easy");
@@ -36,6 +36,7 @@ export function Game() {
             return false;
         }
         setGameStatus("Connected");
+        setField(fieldSize);
         setWebSocket(ws);
         return true;
     };
@@ -67,10 +68,6 @@ export function Game() {
     };
 
     useEffect(() => {
-        const clearField = () => {
-            updateField((draft) => (draft = Array(config.defFieldSize ** 2)));
-        };
-
         if (webSocket) {
             // webSocket events
             webSocket.addEventListener("message", (e) => {
@@ -87,7 +84,6 @@ export function Game() {
             webSocket.addEventListener("close", (e) => {
                 setWebSocket(null);
                 setGameId(null);
-                clearField();
                 setGameStatus("Lost Connection");
             });
         }
@@ -101,7 +97,7 @@ export function Game() {
                     gameStatus,
                     connectToServer,
                     fieldSize,
-                    setFieldSize,
+                    setField,
                     gameDifficulty,
                     setGameDifficulty,
                 }}
